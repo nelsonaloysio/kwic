@@ -1,0 +1,19 @@
+A KWIC Implementation
+
+Based on an exercise presented in "Foundations of Statistical Natural Language Processing"
+by Christopher D. Manning and Hinrich Scütze:
+
+Exercise 1.7
+Write a program to produce KWIC displays from a text file. Have the user be able
+to select the word of interest and the size of the surrounding context.
+
+Assumptions:
+Anything surrounded by whitespace is a keyword.
+Search is case-sensitive.
+
+ Implementation:
+ There is a command line and GUI version in java and as well as in Python.
+
+ Build:
+ For java type ant
+

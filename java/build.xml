@@ -1,0 +1,23 @@
+<project name="kwic_implementation" default="dist" basedir=".">
+
+    <description>Simple implementation of Keyword in Context program</description>
+    <!-- set global properties for this build -->
+    <property name="src" location="src" />
+    <property name="classes" location="classes" />
+
+    <target name="init">
+        <!-- Create the time stamp -->
+        <tstamp/>
+        <!-- Create the classes directory structure used by compile -->
+        <mkdir dir="${classes}" />
+    </target>
+
+    <target name="compile" depends="init" description="compile the source">
+        <!-- Compile the java code from ${src} into ${classes} -->
+        <javac srcdir="${src}" destdir="${classes}"/>
+    </target>
+
+    <target name="dist" depends="compile" description="generate the distribution">
+        <!-- Nothing here -->
+    </target>
+</project>
