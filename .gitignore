@@ -1,4 +1,4 @@
 *.class
 classes/
-/nbproject/private/
-/build/
+nbproject/private/
+build/
