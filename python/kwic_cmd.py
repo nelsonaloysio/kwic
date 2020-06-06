@@ -1,63 +1,81 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
 import argparse
+import string
 import sys
 
-def verify_args(cmd_args):
-    """parse arguments and verify if they are correct"""
-    parser = argparse.ArgumentParser(description='Keyword In Context')
-    parser.add_argument('-f', '--file', metavar='file_path', help='The absolute \
-            path of the file', nargs=1, type=file, dest='filePath', required=True)
-    parser.add_argument('-s', '--size', metavar='ctxt_length', help='The \
-            length of the context around the keyword', nargs=1, type=int, default=5)
-    parser.add_argument('-k', '--keyword', metavar='keyword', help='The keyword \
-            to be searched', nargs=1, type=str, required=True)
+SIZE = 5
 
-    args = parser.parse_args(cmd_args)
-    return args
-
-def display(output, ctxt_size, kw_len):
+def display_kwic(output, size=SIZE):
     """Display the kwic output"""
-    for left_ctxt, keyw, right_ctxt in output:
-        print "{0:{3}}\t{1:{4}}\t{2:{3}}".format(left_ctxt, keyw, right_ctxt, 5*ctxt_size, kw_len)
+    for left_ctxt, keyword, right_ctxt in output:
+        print("{0:{3}}\t{1:{4}}\t{2:{3}}".format(left_ctxt, keyword, right_ctxt, 5*size, len(keyword)))
 
-def launch_kwic(file_obj, size, keyword):
+def launch_kwic(file_obj, keyword, size=SIZE, ignore_case=False):
     """Perform keyword search and identify the contexts"""
-    if size < 0:
-        raise ValueError("Context length has to be non-zero positive integer")
-    token_chain = []
+    if size < 1:
+        raise ValueError('Error: context length has to a be non-zero positive integer.')
+
+    size += 1
     output = []
+
+    if ignore_case:
+        keyword = keyword.lower()
+
     for line in file_obj:
+        token_chain = []
+        original_chain = line.strip().split()
+
+        if ignore_case:
+            line = line.lower()
+
         token_chain.extend(line.strip().split())
-    begin = 0
-    end = len(token_chain)
-    while token_chain[begin:].count(keyword) > 0:
-        idx = token_chain[begin:].index(keyword)
-        start_ctxt = ''
-        end_ctxt = ''
-        if idx-1 < 0:
-            pass
-        elif idx-size < 0:
-            start_ctxt = " ".join(token_chain[:idx-1])
-        else:
-            start_ctxt = " ".join(token_chain[idx-size:idx-1])
-        if idx+1 >= end:
-            pass
-        elif idx+size >= end:
-            end_ctxt = " ".join(token_chain[idx+1:])
-        else:
-            end_ctxt = " ".join(token_chain[idx+1:idx+size])
-        output.append((start_ctxt, keyword, end_ctxt))
-        begin += idx+1
-    file_obj.close()
+
+        for i, token in enumerate(token_chain):
+            if keyword in token:
+                for punct in string.punctuation:
+                    token_chain[i] = token_chain[i].strip(punct)
+
+        while token_chain.count(keyword) > 0:
+            idx = token_chain.index(keyword)
+            end = len(token_chain)
+
+            start_ctxt = str()
+            end_ctxt = str()
+
+            if idx-1 < 0:
+                pass
+            elif idx-size < 0:
+                start_ctxt = ' '.join(original_chain[:idx-1])
+            else:
+                start_ctxt = ' '.join(original_chain[idx-size+1:idx])
+
+            if idx+1 >= end:
+                pass
+            elif idx+size >= end:
+                end_ctxt = ' '.join(original_chain[idx+1:])
+            else:
+                end_ctxt = ' '.join(original_chain[idx+1:idx+size])
+
+            if len(original_chain[idx]) > len(token_chain[idx]):
+                head, tail = original_chain[idx].lower().split(token_chain[idx].lower(),1)
+                original_chain[idx] = original_chain[idx].lstrip(head).rstrip(tail)
+                start_ctxt = str(start_ctxt + ' ' + head).lstrip()
+                end_ctxt = str(tail + ' ' + end_ctxt).rstrip()
+
+            output.append([start_ctxt, original_chain[idx], end_ctxt])
+            original_chain = original_chain[idx+1:]
+            token_chain = token_chain[idx+1:]
+
     return output
 
 if __name__ == '__main__':
-    try:
-        PARSED_ARGS = verify_args(sys.argv[1:])
-        CONCORD = launch_kwic(PARSED_ARGS.filePath[0], PARSED_ARGS.size[0], PARSED_ARGS.keyword[0])
-        display(CONCORD, PARSED_ARGS.size[0], len(PARSED_ARGS.keyword[0]))
-    except IOError as ioe:
-        print ioe
-    except ValueError as val_err:
-        print val_err
-        #print sys.exc_info()[1][1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', help='absolute path of the file', type=file)
+    parser.add_argument('keyword', metavar='keyword', help='keyword to search (comma separated')
+    parser.add_argument('-s', '--size', help='length of the context around the keyword', default=SIZE, type=int)
+    parser.add_argument('-i', '--ignore-case', action='store_true', help='ignore case letters (AaBbCc)')
+    args = parser.parse_args()
+    kwic = launch_kwic(args.file, args.keyword, args.size, args.ignore_case)
+    display_kwic(kwic)
